@@ -1,0 +1,192 @@
+{
+  "name": "cybersecurity",
+  "version": "0.1.0",
+  "description": "AI-augmented cybersecurity operations — incident response, threat intelligence, compliance assessment, vulnerability management, risk analysis, and AI security governance. Supports SOC analysts through CISOs with framework-aware, tool-agnostic workflows configurable to any organization's security program.",
+  "author": "Cybersecurity Plugin Contributors",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/anthropics/knowledge-work-plugins",
+  "config": {
+    "local": "security.local.md",
+    "local_example": "security.local.example.md"
+  },
+  "skills": [
+    {
+      "name": "incident-response",
+      "path": "skills/incident-response/SKILL.md",
+      "description": "Full incident response lifecycle — triage, investigation, containment, eradication, recovery, and lessons learned.",
+      "roles": ["Security Operations"]
+    },
+    {
+      "name": "threat-intelligence",
+      "path": "skills/threat-intelligence/SKILL.md",
+      "description": "Threat intelligence workflows — IOC enrichment, actor profiling, campaign tracking, and threat hunt hypothesis generation.",
+      "roles": ["Security Operations"]
+    },
+    {
+      "name": "ai-agent-review",
+      "path": "skills/ai-agent-review/SKILL.md",
+      "description": "Security review of AI agents, plugins, and MCP servers against OWASP LLM Top 10, MITRE ATLAS, and NIST AI RMF.",
+      "roles": ["AI Security", "Security Architecture"]
+    },
+    {
+      "name": "compliance-assessment",
+      "path": "skills/compliance-assessment/SKILL.md",
+      "description": "Framework-based maturity assessment, gap analysis, and remediation roadmap across NIST CSF, ISO 27001, SOC 2, CMMC, NERC CIP, and NIST 800-53.",
+      "roles": ["GRC", "Security Leadership"]
+    },
+    {
+      "name": "policy-management",
+      "path": "skills/policy-management/SKILL.md",
+      "description": "Security policy drafting, review, control mapping, and exception tracking.",
+      "roles": ["GRC", "Security Leadership"]
+    },
+    {
+      "name": "access-review",
+      "path": "skills/access-review/SKILL.md",
+      "description": "Access certification, privilege analysis, SoD conflict detection, and orphan account identification.",
+      "roles": ["IAM", "GRC"]
+    },
+    {
+      "name": "vulnerability-management",
+      "path": "skills/vulnerability-management/SKILL.md",
+      "description": "Risk-based vulnerability prioritization, remediation tracking, SLA compliance monitoring, and exception documentation.",
+      "roles": ["Security Operations", "Security Architecture"]
+    },
+    {
+      "name": "security-architecture-review",
+      "path": "skills/security-architecture-review/SKILL.md",
+      "description": "Design review, cloud posture assessment, zero trust evaluation, and architectural risk analysis.",
+      "roles": ["Security Architecture", "Application Security"]
+    },
+    {
+      "name": "risk-assessment",
+      "path": "skills/risk-assessment/SKILL.md",
+      "description": "Risk register management, risk quantification, third-party risk assessment, and risk reporting.",
+      "roles": ["GRC", "Security Leadership"]
+    },
+    {
+      "name": "security-reporting",
+      "path": "skills/security-reporting/SKILL.md",
+      "description": "Board-ready metrics, ELT dashboards, KPI/OKR tracking, and audience-appropriate security program reporting.",
+      "roles": ["Security Leadership"]
+    },
+    {
+      "name": "audit-support",
+      "path": "skills/audit-support/SKILL.md",
+      "description": "Evidence collection, control testing documentation, audit response coordination, and finding remediation tracking.",
+      "roles": ["GRC"]
+    },
+    {
+      "name": "ai-governance",
+      "path": "skills/ai-governance/SKILL.md",
+      "description": "AI deployment governance, acceptable use policy, AI risk assessment, and AI risk register management.",
+      "roles": ["AI Security", "Security Leadership", "GRC"]
+    }
+  ],
+  "commands": [
+    {
+      "name": "threat-brief",
+      "path": "commands/threat-brief.md",
+      "description": "Generate a structured threat intelligence briefing for your sector and geography.",
+      "invokes": ["threat-intelligence"]
+    },
+    {
+      "name": "investigate",
+      "path": "commands/investigate.md",
+      "description": "Deep-dive investigation of an indicator, IP address, domain, hash, threat actor, or CVE.",
+      "invokes": ["threat-intelligence"]
+    },
+    {
+      "name": "triage-alert",
+      "path": "commands/triage-alert.md",
+      "description": "Rapidly triage an incoming security alert, SIEM detection, or suspicious activity report.",
+      "invokes": ["incident-response"]
+    },
+    {
+      "name": "assess-compliance",
+      "path": "commands/assess-compliance.md",
+      "description": "Run a framework-based compliance assessment, gap analysis, or remediation roadmap.",
+      "invokes": ["compliance-assessment"]
+    },
+    {
+      "name": "review-access",
+      "path": "commands/review-access.md",
+      "description": "Conduct a structured access review for a user, role, group, or organizational scope.",
+      "invokes": ["access-review"]
+    },
+    {
+      "name": "assess-risk",
+      "path": "commands/assess-risk.md",
+      "description": "Assess a security risk scenario, vendor, or system and produce a risk register entry.",
+      "invokes": ["risk-assessment"]
+    },
+    {
+      "name": "prep-report",
+      "path": "commands/prep-report.md",
+      "description": "Prepare an audience-appropriate security report — board briefing, ELT update, or operational dashboard.",
+      "invokes": ["security-reporting"]
+    },
+    {
+      "name": "scan-skills",
+      "path": "commands/scan-skills.md",
+      "description": "Security review of AI agents, plugins, MCP servers, or skill files.",
+      "invokes": ["ai-agent-review"]
+    }
+  ],
+  "frameworks": [
+    {
+      "id": "nist-csf-2.0",
+      "path": "frameworks/nist-csf-2.0.md",
+      "name": "NIST Cybersecurity Framework 2.0"
+    },
+    {
+      "id": "nist-800-53",
+      "path": "frameworks/nist-800-53.md",
+      "name": "NIST SP 800-53 Rev 5"
+    },
+    {
+      "id": "iso-27001",
+      "path": "frameworks/iso-27001.md",
+      "name": "ISO/IEC 27001:2022"
+    },
+    {
+      "id": "nerc-cip",
+      "path": "frameworks/nerc-cip.md",
+      "name": "NERC Critical Infrastructure Protection"
+    },
+    {
+      "id": "cmmc",
+      "path": "frameworks/cmmc.md",
+      "name": "CMMC 2.0"
+    },
+    {
+      "id": "soc2",
+      "path": "frameworks/soc2.md",
+      "name": "SOC 2 Trust Services Criteria"
+    },
+    {
+      "id": "mitre-atlas",
+      "path": "frameworks/mitre-atlas.md",
+      "name": "MITRE ATLAS"
+    },
+    {
+      "id": "nist-ai-rmf",
+      "path": "frameworks/nist-ai-rmf.md",
+      "name": "NIST AI Risk Management Framework 1.0"
+    },
+    {
+      "id": "owasp-llm-top-10",
+      "path": "frameworks/owasp-llm-top-10.md",
+      "name": "OWASP Top 10 for LLM Applications 2025"
+    }
+  ],
+  "roles": [
+    "Security Operations",
+    "Governance, Risk & Compliance",
+    "Identity & Access Management",
+    "Application Security",
+    "Security Architecture & Engineering",
+    "Security Leadership",
+    "AI Security"
+  ]
+}

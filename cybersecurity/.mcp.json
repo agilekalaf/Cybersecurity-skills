@@ -1,0 +1,276 @@
+{
+  "_comment": "MCP connector configuration for the Cybersecurity Plugin.",
+  "_instructions": [
+    "Copy this file to .mcp.json (it already is .mcp.json — update the values below).",
+    "Replace all placeholder values (YOUR_*, http://your-*) with your actual credentials and endpoints.",
+    "Only configure connectors for tools you actually have deployed — unused connectors can be removed.",
+    "Credentials should be stored in environment variables or a secrets manager, not hardcoded here.",
+    "See CONNECTORS.md for setup instructions and required permissions for each connector."
+  ],
+
+  "mcpServers": {
+
+    "_category_siem": {
+      "_comment": "SIEM / Log Management — Used by: incident-response, threat-intelligence, vulnerability-management, security-reporting",
+      "_options": "Microsoft Sentinel, Splunk, Google Chronicle, Elastic Security"
+    },
+
+    "sentinel": {
+      "_comment": "Microsoft Sentinel — comment out if not using Sentinel",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/sentinel"],
+      "env": {
+        "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+        "AZURE_CLIENT_ID": "YOUR_CLIENT_ID",
+        "AZURE_CLIENT_SECRET": "YOUR_CLIENT_SECRET",
+        "SENTINEL_WORKSPACE_ID": "YOUR_WORKSPACE_ID",
+        "SENTINEL_RESOURCE_GROUP": "YOUR_RESOURCE_GROUP",
+        "SENTINEL_SUBSCRIPTION_ID": "YOUR_SUBSCRIPTION_ID"
+      }
+    },
+
+    "splunk": {
+      "_comment": "Splunk — comment out if not using Splunk",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/splunk"],
+      "env": {
+        "SPLUNK_HOST": "https://your-splunk-instance.example.com:8089",
+        "SPLUNK_TOKEN": "YOUR_SPLUNK_API_TOKEN",
+        "SPLUNK_APP": "search"
+      }
+    },
+
+    "_category_soar": {
+      "_comment": "SOAR / Automation — Used by: incident-response",
+      "_options": "Sentinel SOAR (Logic Apps), Splunk SOAR (Phantom), Palo Alto XSOAR, Tines"
+    },
+
+    "_category_identity": {
+      "_comment": "Identity & Access Management — Used by: access-review, incident-response, audit-support",
+      "_options": "Microsoft Entra ID, Okta, SailPoint, CyberArk, BeyondTrust"
+    },
+
+    "entra-id": {
+      "_comment": "Microsoft Entra ID (Azure AD) — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/microsoft-graph"],
+      "env": {
+        "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+        "AZURE_CLIENT_ID": "YOUR_CLIENT_ID",
+        "AZURE_CLIENT_SECRET": "YOUR_CLIENT_SECRET",
+        "GRAPH_SCOPES": "User.Read.All,Group.Read.All,Directory.Read.All,AuditLog.Read.All"
+      }
+    },
+
+    "okta": {
+      "_comment": "Okta — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/okta"],
+      "env": {
+        "OKTA_DOMAIN": "https://your-org.okta.com",
+        "OKTA_API_TOKEN": "YOUR_OKTA_API_TOKEN"
+      }
+    },
+
+    "_category_vulnerability": {
+      "_comment": "Vulnerability Scanner — Used by: vulnerability-management, security-reporting",
+      "_options": "Qualys, Tenable, Rapid7 InsightVM, Microsoft Defender Vulnerability Management"
+    },
+
+    "qualys": {
+      "_comment": "Qualys VMDR — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/qualys"],
+      "env": {
+        "QUALYS_PLATFORM": "https://qualysapi.qualys.com",
+        "QUALYS_USERNAME": "YOUR_USERNAME",
+        "QUALYS_PASSWORD": "YOUR_PASSWORD"
+      }
+    },
+
+    "tenable": {
+      "_comment": "Tenable.io or Tenable.sc — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/tenable"],
+      "env": {
+        "TENABLE_ACCESS_KEY": "YOUR_ACCESS_KEY",
+        "TENABLE_SECRET_KEY": "YOUR_SECRET_KEY",
+        "TENABLE_PLATFORM": "https://cloud.tenable.com"
+      }
+    },
+
+    "_category_edr": {
+      "_comment": "Endpoint / EDR — Used by: incident-response, threat-intelligence",
+      "_options": "Microsoft Defender for Endpoint, CrowdStrike Falcon, SentinelOne"
+    },
+
+    "defender-endpoint": {
+      "_comment": "Microsoft Defender for Endpoint — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/defender-endpoint"],
+      "env": {
+        "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+        "AZURE_CLIENT_ID": "YOUR_CLIENT_ID",
+        "AZURE_CLIENT_SECRET": "YOUR_CLIENT_SECRET"
+      }
+    },
+
+    "crowdstrike": {
+      "_comment": "CrowdStrike Falcon — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/crowdstrike"],
+      "env": {
+        "CROWDSTRIKE_CLIENT_ID": "YOUR_CLIENT_ID",
+        "CROWDSTRIKE_CLIENT_SECRET": "YOUR_CLIENT_SECRET",
+        "CROWDSTRIKE_BASE_URL": "https://api.crowdstrike.com"
+      }
+    },
+
+    "_category_ticketing": {
+      "_comment": "Ticketing / Workflow — Used by: incident-response, vulnerability-management, access-review, risk-assessment, audit-support",
+      "_options": "ServiceNow, Jira"
+    },
+
+    "servicenow": {
+      "_comment": "ServiceNow — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/servicenow"],
+      "env": {
+        "SERVICENOW_INSTANCE": "https://your-instance.service-now.com",
+        "SERVICENOW_USERNAME": "YOUR_USERNAME",
+        "SERVICENOW_PASSWORD": "YOUR_PASSWORD"
+      }
+    },
+
+    "jira": {
+      "_comment": "Jira — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/jira"],
+      "env": {
+        "JIRA_BASE_URL": "https://your-org.atlassian.net",
+        "JIRA_EMAIL": "your-email@example.com",
+        "JIRA_API_TOKEN": "YOUR_API_TOKEN",
+        "JIRA_PROJECT_KEY": "SEC"
+      }
+    },
+
+    "_category_grc": {
+      "_comment": "GRC Platform — Used by: compliance-assessment, risk-assessment, policy-management, audit-support, security-reporting",
+      "_options": "Archer, ServiceNow GRC, LogicGate, Hyperproof"
+    },
+
+    "hyperproof": {
+      "_comment": "Hyperproof GRC — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/hyperproof"],
+      "env": {
+        "HYPERPROOF_CLIENT_ID": "YOUR_CLIENT_ID",
+        "HYPERPROOF_CLIENT_SECRET": "YOUR_CLIENT_SECRET"
+      }
+    },
+
+    "_category_threat_intel": {
+      "_comment": "Threat Intelligence — Used by: threat-intelligence, vulnerability-management, incident-response",
+      "_note": "Start here: Feedly + OpenCTI + CISA KEV provides immediate value with minimal setup"
+    },
+
+    "feedly": {
+      "_comment": "Feedly for Threat Intelligence — recommended starting point",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/feedly"],
+      "env": {
+        "FEEDLY_ACCESS_TOKEN": "YOUR_FEEDLY_TOKEN",
+        "FEEDLY_BASE_URL": "https://api.feedly.com"
+      }
+    },
+
+    "opencti": {
+      "_comment": "OpenCTI — recommended starting point; self-hosted or cloud",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/opencti"],
+      "env": {
+        "OPENCTI_URL": "https://your-opencti-instance.example.com",
+        "OPENCTI_TOKEN": "YOUR_API_TOKEN"
+      }
+    },
+
+    "virustotal": {
+      "_comment": "VirusTotal — essential for IOC enrichment",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/virustotal"],
+      "env": {
+        "VIRUSTOTAL_API_KEY": "YOUR_API_KEY"
+      }
+    },
+
+    "abuseipdb": {
+      "_comment": "AbuseIPDB — IP reputation",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/abuseipdb"],
+      "env": {
+        "ABUSEIPDB_API_KEY": "YOUR_API_KEY"
+      }
+    },
+
+    "shodan": {
+      "_comment": "Shodan — internet exposure and service fingerprinting",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/shodan"],
+      "env": {
+        "SHODAN_API_KEY": "YOUR_API_KEY"
+      }
+    },
+
+    "_category_cloud_security": {
+      "_comment": "Cloud Security / CSPM — Used by: security-architecture-review, vulnerability-management",
+      "_options": "Microsoft Defender for Cloud, Prisma Cloud, Wiz"
+    },
+
+    "defender-cloud": {
+      "_comment": "Microsoft Defender for Cloud — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/defender-cloud"],
+      "env": {
+        "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+        "AZURE_CLIENT_ID": "YOUR_CLIENT_ID",
+        "AZURE_CLIENT_SECRET": "YOUR_CLIENT_SECRET",
+        "AZURE_SUBSCRIPTION_IDS": "sub-id-1,sub-id-2"
+      }
+    },
+
+    "_category_documentation": {
+      "_comment": "Documentation — Used by: policy-management, compliance-assessment, audit-support, ai-governance",
+      "_options": "Microsoft SharePoint, Confluence, Google Drive"
+    },
+
+    "sharepoint": {
+      "_comment": "Microsoft SharePoint / OneDrive — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/sharepoint"],
+      "env": {
+        "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+        "AZURE_CLIENT_ID": "YOUR_CLIENT_ID",
+        "AZURE_CLIENT_SECRET": "YOUR_CLIENT_SECRET",
+        "SHAREPOINT_SITE_URL": "https://your-org.sharepoint.com/sites/security"
+      }
+    },
+
+    "confluence": {
+      "_comment": "Atlassian Confluence — comment out if not using",
+      "command": "npx",
+      "args": ["-y", "@anthropic-mcp/confluence"],
+      "env": {
+        "CONFLUENCE_BASE_URL": "https://your-org.atlassian.net/wiki",
+        "CONFLUENCE_EMAIL": "your-email@example.com",
+        "CONFLUENCE_API_TOKEN": "YOUR_API_TOKEN",
+        "CONFLUENCE_SPACE_KEY": "SEC"
+      }
+    },
+
+    "_category_email": {
+      "_comment": "Email / Collaboration — Used by: incident-response (phishing investigation)",
+      "_options": "Microsoft Exchange / M365, Google Workspace"
+    }
+
+  }
+}

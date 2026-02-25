@@ -1,6 +1,7 @@
 # /threat-brief
 
-Generate a threat intelligence briefing tailored to your organization's sector, threat profile, and intelligence requirements.
+Generate a structured threat intelligence briefing for your organization's sector and geography,
+pulling current threat actor activity, actively exploited vulnerabilities, and emerging campaigns.
 
 ## Usage
 

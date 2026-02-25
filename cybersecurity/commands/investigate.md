@@ -1,88 +1,97 @@
 # /investigate
 
-Deep-dive investigation on a specific indicator of compromise, threat actor, incident, or anomaly.
+Deep-dive investigation of a specific indicator, IP address, domain, file hash, threat actor,
+or suspicious activity pattern. Runs full IOC enrichment across all connected threat intelligence
+sources and correlates against internal telemetry.
 
 ## Usage
 
 ```
-/investigate 185.220.101.45
-/investigate abc123def456...  (file hash)
-/investigate evil-domain.com
-/investigate --actor APT29
-/investigate --campaign Scattered Spider
-/investigate --cve CVE-2024-3400
+/investigate 203.0.113.47
+/investigate malicious-domain.example.com
+/investigate d41d8cd98f00b204e9800998ecf8427e
+/investigate "APT29" --type actor
+/investigate --source siem "unusual outbound connections from finance subnet"
+/investigate CVE-2024-12345 --type vulnerability
 ```
 
-## What this command does
+## What This Command Does
 
-This command takes a specific indicator, entity, or reference point and performs comprehensive multi-source investigation — enrichment, correlation, context gathering, and pivoting to related indicators. It's the reactive counterpart to `/threat-brief`: where threat-brief asks "what should I know today," investigate asks "tell me everything about this specific thing."
+Invokes the threat-intelligence skill (Workflow 1: Indicator Enrichment and Workflow 2: Actor
+Profiling) to run a comprehensive investigation. For indicators: queries all connected TI platforms
+in parallel, correlates against SIEM telemetry, and produces a structured enrichment report with
+disposition and recommended action. For actors: builds a full profile with TTPs, infrastructure,
+and targeting assessment. For vulnerabilities: provides exploitation status, affected versions,
+and exposure assessment.
 
 ## Parameters
 
-The primary input is the indicator or entity to investigate. The command auto-detects indicator type:
-
-- **IP address:** Reputation, geolocation, ASN, open ports, associated domains, abuse reports, campaign associations
-- **Domain/hostname:** Reputation, WHOIS, DNS history, associated IPs, malware associations, categorization
-- **File hash (MD5/SHA1/SHA256):** Detection ratios, behavioral analysis, malware family, campaign associations, related samples
-- **URL:** Reputation, redirect chain, hosted content analysis, associated infrastructure
-- **Email address:** Reputation, associated domains, breach history, campaign usage
-
-Named entity flags:
-- **--actor [name]:** Threat actor deep profile — aliases, TTPs, campaigns, targeting, infrastructure patterns
-- **--campaign [name]:** Campaign analysis — timeline, targets, TTPs, IOCs, attribution
-- **--cve [CVE-ID]:** Vulnerability threat context — who's exploiting it, with what malware, targeting what sectors, exploit availability
-
-Optional modifiers:
-- **--depth:** How far to pivot from the initial indicator. `shallow` (direct enrichment only), `standard` (one level of pivoting), `deep` (full infrastructure mapping). Default: `standard`.
-- **--output:** Format preference. `summary` (quick verdict), `full` (complete report), `iocs` (indicator list for blocking/detection). Default: `full`.
+| Parameter | Values | Default |
+|-----------|--------|---------|
+| `--type` | `indicator`, `actor`, `vulnerability`, `auto` | `auto` (inferred) |
+| `--source` | `siem`, `edr`, `user-report`, `external` | Not set |
+| `--depth` | `quick`, `full` | `full` |
+| `--format` | `report`, `tlp-white`, `stix` | `report` |
+| `--add-to-watchlist` | Flag — no value | Not set |
 
 ## Workflow
 
-1. **Parse and classify the input** — identify indicator type or entity class.
-
-2. **Select appropriate intelligence sources** using the threat-intelligence skill's tool selection logic. Not every source applies to every indicator type.
-
-3. **Execute primary enrichment** — query all relevant sources for direct intelligence on the indicator.
-
-4. **Correlate results** — synthesize across sources. Flag agreements (high confidence) and disagreements (analytical interest). Identify associated campaigns, actors, and malware families.
-
-5. **Pivot to related indicators** (if depth allows) — follow relationships to associated infrastructure. An IP resolving to a domain that hosts a known C2 panel tells a story that the IP alone doesn't.
-
-6. **Map to ATT&CK** — if behavioral data is available, map observed techniques to the ATT&CK framework.
-
-7. **Generate actionable output** — enrichment summary, verdict with confidence, recommended actions, and detection content where applicable.
+1. Parse input to determine indicator type (IP, domain, hash, CVE, actor name, or free text)
+2. Load `security.local.md` for tool stack and sector context
+3. Run parallel enrichment queries across connected platforms:
+   - VirusTotal: reputation, passive DNS, related samples
+   - AbuseIPDB: abuse reports and confidence score (for IPs)
+   - Shodan: service exposure and banner data (for IPs)
+   - OpenCTI: related threat actors, campaigns, and TTOs
+   - Feedly: recent intelligence articles referencing this indicator
+   - SIEM: internal observations — has this indicator appeared in our environment?
+   - CISA KEV: exploitation status (for CVEs)
+4. Synthesize findings into enrichment report with disposition assessment
+5. If `--add-to-watchlist` is set, prepare indicator for SIEM/TI platform ingestion
+6. Generate recommended actions with explicit analyst decision points
 
 ## Output
 
-Varies by input type but always includes:
-- **Verdict** with confidence level and multi-source basis
-- **Enrichment detail** from each responding source
-- **Context** — campaigns, actors, malware families, related indicators
-- **ATT&CK mapping** where behavioral data exists
-- **Recommended actions** — block, monitor, hunt, investigate further, or dismiss
-- **Pivot opportunities** — related indicators worth investigating
+**Standard report includes:**
+- Indicator summary with disposition (Malicious / Suspicious / Clean / Unknown)
+- Source-by-source findings with timestamps
+- Associated threat actors and campaigns
+- Infrastructure context (hosting, ASN, country, CDN/shared flags)
+- Internal exposure: has this been observed in our environment?
+- Recommended action with rationale
+- Raw IOC data formatted for watchlist/SIEM ingestion
 
-For `--actor` and `--campaign` investigations, output includes full profiles as defined in the threat-intelligence skill's actor profiling and campaign analysis workflows.
+**Actor investigation additionally includes:**
+- Full actor profile (see threat-intelligence skill Workflow 2)
+- TTP mapping to MITRE ATT&CK
+- Relevance assessment for your sector and geography
+- Hunt hypotheses derived from actor TTPs
 
-For `--cve` investigations, output includes exploitation status, threat actor usage, malware leveraging the vulnerability, affected products, patch status, and compensating controls.
+## When to Use This
 
-## When to use this
-
-- During alert triage — enrich indicators from a SIEM alert before deciding on escalation
-- During incident response — build context on adversary infrastructure and TTPs
-- Proactive hunting — investigate a suspicious indicator found during a hunt
-- Vulnerability prioritization — understand whether a CVE is being actively exploited and by whom
-- Peer intelligence — a sector partner shares indicators; investigate before ingesting into your environment
+- **During incident triage:** Enrich indicators pulled from an active alert before deciding severity
+- **After a threat-brief flags something:** Drill into a specific actor, campaign, or CVE
+- **Routine IOC investigation:** Analyst-submitted IPs/domains/hashes requiring disposition
+- **Threat hunting preparation:** Profile an actor before designing a hunt
+- **Vendor/partner risk:** Investigate an IP or domain associated with a third party
+- **Vulnerability context:** Understand if a CVE is being actively exploited before emergency patching
 
 ## Dependencies
 
-**Required:** At least one IOC enrichment source connected via MCP (VirusTotal, Cyber Sentinel, or equivalent).
+**Recommended (in priority order):**
+1. VirusTotal — core reputation data for all indicator types
+2. SIEM — internal correlation (critical for determining actual exposure)
+3. OpenCTI — structured actor and campaign data
+4. AbuseIPDB — IP-specific abuse reputation
+5. Feedly — recent intelligence articles
 
-**Recommended:** Cyber Sentinel (aggregated enrichment) + Feedly (campaign/actor context) + OpenCTI (structured relationships) + Shodan (infrastructure) + Security Detections (detection rules for observed TTPs).
+**Minimal mode:** Provide raw indicator value; the command generates an investigation template
+with instructions for manual enrichment via free web tools. Output will note what each source
+would have added if connected.
 
 ## Related
 
-- `/threat-brief` — Proactive situational awareness (strategic, broad)
-- `/triage-alert` — Quick alert assessment (references investigate for deep-dive)
-- `threat-intelligence` skill — The domain knowledge powering this command
-- `incident-response` skill — Investigation phase workflow that calls on this command's outputs
+- **Skill:** `skills/threat-intelligence/SKILL.md` (Workflows 1 and 2)
+- **Command:** `/threat-brief` — for broad landscape briefing before drilling into specifics
+- **Command:** `/triage-alert` — when an investigation reveals an active incident
+- **Skill:** `skills/incident-response/SKILL.md` — when investigation transitions to IR
