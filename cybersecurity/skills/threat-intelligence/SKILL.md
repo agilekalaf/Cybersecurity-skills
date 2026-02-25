@@ -1,259 +1,286 @@
 ---
 name: threat-intelligence
-description: >
-  Threat intelligence, threat hunting, IOC analysis, indicator enrichment, actor profiling,
-  threat actor research, malware analysis, campaign tracking, CTI, cyber threat intelligence,
-  threat landscape briefing, who is attacking us, attacker attribution, TTP analysis,
-  MITRE ATT&CK mapping, threat feeds, vulnerability exploitation intelligence,
-  "is this IP malicious", "who owns this domain", "what does this hash do",
-  intelligence-driven detection, proactive threat hunting, threat hunt hypothesis.
+description: Consume, correlate, and operationalize cyber threat intelligence from multiple sources. Use this skill whenever the user mentions threat intelligence, threat feeds, IOC enrichment, threat actors, APT groups, TTPs, MITRE ATT&CK mapping, threat landscape, threat hunting, indicators of compromise, campaign tracking, vulnerability exploitation intelligence, CVE threat context, or sector-specific threat briefings. Also trigger when the user asks about recent cyber attacks, ransomware campaigns, nation-state activity, emerging threats, or wants to enrich an IP address, domain, hash, or URL with reputation and context data. This skill supports the /threat-brief and /investigate commands and works closely with the incident-response skill during active investigations.
 ---
 
 # Threat Intelligence
 
-This skill orchestrates threat intelligence workflows — from individual indicator enrichment to full
-actor profiling, campaign tracking, and intelligence-driven threat hunt hypothesis generation. It is
-designed to be heavily tool-connected: the more MCP connectors available, the richer the output.
-It functions in degraded mode with no connections, relying on analyst-provided context and open sources.
+A skill for consuming, correlating, and operationalizing cyber threat intelligence across the full intelligence lifecycle — from raw feed ingestion through finished intelligence products. This skill serves both the proactive side of TI (situational awareness, threat landscape monitoring, hunt hypothesis generation) and the reactive side (IOC enrichment, incident context, attribution support).
+
+The threat intelligence MCP ecosystem is one of the most mature in cybersecurity. This skill is designed to orchestrate across multiple TI sources simultaneously, correlating results to produce higher-confidence assessments than any single source provides alone.
 
 > **Philosophy: People Led, AI Driven (PLAID)**
->
-> Threat intelligence work requires judgment that tools alone cannot provide: understanding geopolitical
-> context, distinguishing signal from noise in feeds, recognizing when an "indicator" is actually
-> infrastructure shared across benign services, and deciding what's worth acting on. This skill
-> accelerates the mechanical work — querying feeds, correlating indicators, structuring actor profiles —
-> so analysts spend their time on interpretation and decision-making rather than data gathering.
-> Attribution assessments are always stated with explicit confidence levels. Never treat AI-generated
-> attribution as definitive without corroborating intelligence.
+> AI excels at the speed-intensive parts of threat intelligence — ingesting high-volume feeds, correlating indicators across sources, mapping TTPs to frameworks, and drafting intelligence products. Humans provide the analytical judgment that turns information into intelligence: assessing source reliability, evaluating adversary intent, making attribution calls, and deciding what matters for *this* organization. Every output from this skill is an analytical input for the human analyst, not a finished conclusion.
 
----
+## Before you begin
 
-## Before You Begin
+Check `security.local.md` for:
+- Industry sector and regulatory environment (shapes threat relevance filtering)
+- Active threat intelligence sources and MCP connectors configured
+- Intelligence requirements (standing questions the security team needs answered)
+- Sector ISACs the org participates in (E-ISAC for utilities, FS-ISAC for financial, H-ISAC for health, etc.)
+- Classification and handling markings in use (TLP, organizational sensitivity levels)
+- Critical assets and crown jewels (for relevance scoring)
 
-Load your `security.local.md` to calibrate this skill. Key fields used:
+## Roles this skill serves
 
-- **Industry sector** — focuses threat actor relevance (financial sector actors vs. energy sector vs. defense)
-- **Tool stack / Threat Intelligence platforms** — routes queries to your deployed feeds
-- **Geographic footprint** — filters geopolitical relevance
-- **SIEM** — enables proactive threat hunting by pushing indicators into detection rules
+- **Threat Intelligence Analyst:** Primary consumer. Feed monitoring, indicator management, intelligence production, hunt support.
+- **SOC Analyst:** IOC enrichment during alert triage, contextualizing detections, identifying campaigns behind individual alerts.
+- **Threat Hunter:** Hypothesis generation from TI, translating adversary TTPs into detection queries, proactive search for unreported compromise.
+- **Security Leadership:** Threat landscape briefings, risk-informed decision making, communicating threat posture to executives and the board.
+- **Incident Responder:** Attribution context during investigations, understanding adversary playbooks to anticipate next moves.
 
-If `security.local.md` is not available, indicate your industry and geographic region at the start of
-the session for appropriately targeted intelligence.
+Adjust depth and output format to role. A SOC analyst enriching an IP during triage needs a fast reputation check and campaign context. A TI analyst building a threat landscape briefing needs comprehensive source synthesis and confidence assessments.
 
----
+## MCP tool landscape
 
-## Roles This Skill Serves
+This skill orchestrates across multiple MCP-connected intelligence sources. The ecosystem is unusually rich — here's what's available and how each source contributes:
 
-**Primary:** Security Operations (threat intelligence analysts, threat hunters, SOC analysts)
+### Strategic intelligence (threat landscape, campaigns, actors)
 
-**Also useful for:**
-- Security Leadership: threat landscape briefings, executive summaries, board-level threat context
-- Incident Response: IOC enrichment and actor attribution during active investigations
-- Security Architecture: understanding attacker TTPs to validate defensive architecture
-- Vulnerability Management: exploitation intelligence to prioritize patching
+**Feedly Threat Graph** — Commercial TI platform with pre-mapped relationships between actors, campaigns, malware, and vulnerabilities across 10,000+ sources. Strongest for: trending threats, campaign tracking, vulnerability exploitation intelligence, sector-specific filtering. The Feedly MCP server enables natural language queries against the Threat Graph — "What ransomware campaigns targeted US utilities in the last 30 days" returns structured, attributed intelligence, not just search results.
 
----
+**OpenCTI** — Open source TI platform using STIX2 data model with a GraphQL API. Strongest for: structured threat data management, relationship mapping between entities, collaborative analysis, MISP integration. The OpenCTI MCP server supports both read and write operations — you can query existing intelligence and create new entities to enrich the knowledge base.
 
-## Workflow 1: Indicator Enrichment
+**MISP** — Open source TI sharing platform with a large community feed ecosystem. Strongest for: indicator sharing, community-sourced intelligence, automated feed ingestion, event correlation.
 
-Use when you have one or more indicators (IP addresses, domains, URLs, file hashes, email addresses)
-and need to determine their nature and disposition rapidly.
+### Tactical intelligence (IOC enrichment, reputation)
 
-### Enrichment query sequence
+**VirusTotal** — File, URL, domain, and IP analysis against 70+ security vendor engines. Strongest for: malware sample analysis, detection ratios, behavioral reports, relationship graphs between indicators.
 
-When MCP tools are connected, run these queries in parallel per indicator type:
+**Shodan** — Internet-connected device intelligence. Strongest for: attack surface assessment, exposed service enumeration, vulnerability scanning context, infrastructure reconnaissance.
 
-| Indicator Type | Primary sources | Secondary sources |
-|---------------|-----------------|-------------------|
-| IP address | VirusTotal, AbuseIPDB, Shodan | OpenCTI, internal SIEM |
-| Domain / URL | VirusTotal, URLScan.io, Feedly | WHOIS, PassiveDNS, OpenCTI |
-| File hash (MD5/SHA1/SHA256) | VirusTotal, MalwareBazaar | EDR telemetry, internal TI |
-| Email address | Header analysis, domain reputation | Breach data (HaveIBeenPwned) |
-| CVE / vulnerability | CISA KEV, NVD, Feedly exploit intel | Vendor advisories |
+**AbuseIPDB** — Community-driven IP reputation database. Strongest for: quick IP reputation checks, abuse reports, ISP context.
 
-### Enrichment output template
+**Cyber Sentinel** — Aggregator MCP server that unifies VirusTotal, AbuseIPDB, URLhaus, Shodan, ThreatFox, and MalwareBazaar into a single query interface with confidence scoring. Strongest for: rapid multi-source IOC enrichment in a single call.
 
-```markdown
-## Indicator Enrichment Report — [Date/Time UTC]
+### Detection intelligence (rules, signatures, hunt queries)
 
-**Requested by:** [Analyst name or ticket reference]
-**Context:** [Investigation ID, alert reference, or reason for query]
+**Security Detections** — Aggregates Sigma rules, Splunk ESCU detections, Elastic rules, and KQL queries into a searchable database with MITRE ATT&CK mappings and CVE tracking. Strongest for: translating TI into detection content, finding existing rules for observed TTPs, gap analysis against ATT&CK coverage.
 
-### Indicator Summary
-| Indicator | Type | Disposition | Confidence | First seen | Last seen |
-|-----------|------|-------------|------------|------------|-----------|
-| [value] | [IP/Domain/Hash/Email] | [Malicious/Suspicious/Clean/Unknown] | [High/Med/Low] | [Date] | [Date] |
+**CISA KEV** — Known Exploited Vulnerabilities catalog. Strongest for: prioritizing patching based on confirmed exploitation, regulatory compliance (BOD 22-01 for federal, best practice for everyone).
 
-### Detail: [Indicator value]
-**Reputation:** [Summary of reputation across sources]
-**Associated malware/campaigns:** [If known]
-**Threat actor association:** [If known, with confidence]
-**Infrastructure context:** [Hosting provider, ASN, country, CDN/shared hosting flags]
-**Detection coverage:** [Are your current detection rules catching this? Check SIEM]
-**Recommended action:** [Block | Monitor | Investigate further | No action — explain]
+### Tool selection logic
 
-### Source citations
-| Source | Result | Retrieved |
-|--------|--------|-----------|
-| VirusTotal | [X/Y engines, last analysis date] | [timestamp] |
-| AbuseIPDB | [Confidence score, report count] | [timestamp] |
-| OpenCTI | [Associated objects] | [timestamp] |
-| Feedly | [Related articles] | [timestamp] |
+Not every query needs every source. Match tools to the intelligence question:
+
+| Intelligence question | Primary sources | Secondary sources |
+|---|---|---|
+| "What's the threat landscape for my sector?" | Feedly, OpenCTI | MISP |
+| "Enrich this IOC" | Cyber Sentinel (aggregated), VirusTotal | Shodan, AbuseIPDB |
+| "Tell me about this threat actor" | Feedly, OpenCTI | MISP, Security Detections |
+| "What CVEs are being actively exploited?" | Feedly, CISA KEV | VirusTotal, Security Detections |
+| "Build detection content for these TTPs" | Security Detections | Feedly (for TTP context), OpenCTI |
+| "Is this IP/domain malicious?" | Cyber Sentinel, VirusTotal | Shodan, AbuseIPDB |
+| "What should I hunt for this week?" | Feedly, OpenCTI, CISA KEV | Security Detections |
+
+When multiple sources are queried, synthesize results rather than presenting each source's output separately. Conflicting assessments between sources are valuable analytical signals — note them explicitly with confidence reasoning.
+
+## Core workflows
+
+### Workflow 1: Threat landscape briefing (/threat-brief)
+
+Produce a situational awareness briefing tailored to the organization's sector, threat profile, and intelligence requirements. This is the proactive, "start of day" workflow.
+
+1. **Gather current intelligence** using available MCP sources:
+   - Query Feedly for trending threats, active campaigns, and newly exploited vulnerabilities relevant to the org's sector (from `security.local.md`)
+   - Query OpenCTI for recent reports, newly tracked actors, and updated indicator sets
+   - Query CISA KEV for newly added exploited vulnerabilities
+   - Check sector ISAC feeds if available
+
+2. **Filter for relevance.** Not everything matters to every org. Apply relevance filters based on `security.local.md`:
+   - Sector targeting — Is this threat actor or campaign known to target our industry?
+   - Technology overlap — Do we run the software, hardware, or services being targeted?
+   - Geographic relevance — Does the threat target our operating regions?
+   - TTP overlap — Do the techniques used align with gaps in our detection coverage?
+   - Severity/impact threshold — Does this meet the minimum threshold for leadership attention?
+
+3. **Synthesize into a briefing.** Structure the output for the intended audience:
+
+```
+## Threat Intelligence Briefing
+**Period:** [date range, typically last 24-72 hours]
+**Prepared for:** [org name / team]
+**Classification:** [TLP marking per org policy]
+
+### Priority Items
+Items requiring attention or action from the security team.
+
+**[PRIORITY-1] [Title — concise description of threat]**
+- **Relevance:** [Why this matters to *this* organization specifically]
+- **Threat actor/campaign:** [attribution if available, with confidence level]
+- **Targeted sector(s):** [sectors affected]
+- **TTPs observed:** [ATT&CK technique IDs and names]
+- **IOCs:** [key indicators, if actionable for detection]
+- **Recommended action:** [specific steps — check exposure, deploy detection, hunt, patch, monitor]
+- **Sources:** [which intelligence sources reported this]
+
+[Repeat for each priority item — aim for 3-5, not an exhaustive list]
+
+### Vulnerability Exploitation Intelligence
+Newly exploited vulnerabilities with active threat actor campaigns.
+
+| CVE | Product | CVSS | Exploitation Status | Relevant to Us? | Action |
+|-----|---------|------|-------------------|-----------------|--------|
+| [CVE-ID] | [product] | [score] | [CISA KEV / active campaign / PoC available] | [Yes/No + reason] | [patch/mitigate/monitor] |
+
+### Threat Landscape Summary
+Broader trends and developments that inform strategic posture but don't require immediate action.
+
+- [Trend 1: brief description with source]
+- [Trend 2: brief description with source]
+- [Trend 3: brief description with source]
+
+### Intelligence Gaps
+Questions we couldn't answer with available sources, or areas where confidence is low.
+
+- [Gap 1: what we don't know and why it matters]
 ```
 
----
+4. **Generate detection artifacts** where appropriate. For priority items with actionable TTPs, check Security Detections for existing rules. If coverage gaps exist, note them as recommendations for the detection engineering team.
 
-## Workflow 2: Threat Actor Profiling
+### Workflow 2: IOC enrichment (/investigate support)
 
-Use when investigating a possible actor attribution, preparing threat landscape briefings,
-or building threat hunt hypotheses based on actor TTPs.
+When presented with a specific indicator — IP address, domain, file hash, URL, email address — perform multi-source enrichment:
 
-### Actor profile template
+1. **Identify the indicator type** and select appropriate sources. Don't query sources that can't handle the indicator type (e.g., Shodan is for IPs, not file hashes).
 
-```markdown
-## Threat Actor Profile: [Actor name / alias]
-**Profile date:** [Date]
-**Confidence in attribution:** [High | Medium | Low | Speculative]
+2. **Query sources in parallel** where possible. Use Cyber Sentinel for aggregated lookups when available; fall back to individual source queries when needed.
 
-### Identity
-| Field | Detail |
-|-------|--------|
-| Primary alias(es) | [e.g., APT29, Cozy Bear, Midnight Blizzard] |
-| Nation-state sponsorship | [Country — with confidence level] |
-| Motivation | [Espionage | Financial | Hacktivism | Disruption | Unknown] |
-| Active since | [Approximate year] |
-| Target sectors | [e.g., Government, Financial, Defense, Energy] |
-| Target geographies | [e.g., US, Western Europe, Ukraine] |
+3. **Synthesize results** into an enrichment summary:
+
+```
+## IOC Enrichment: [indicator value]
+**Type:** [IP / Domain / Hash / URL / Email]
+**Query time:** [timestamp]
+
+### Verdict: [Malicious / Suspicious / Benign / Unknown]
+**Confidence:** [High / Medium / Low]
+**Basis:** [which sources agree/disagree and why]
+
+### Reputation
+| Source | Verdict | Detail |
+|--------|---------|--------|
+| [VirusTotal] | [malicious: 12/89 engines] | [detection names, first/last seen] |
+| [AbuseIPDB] | [abuse confidence: 87%] | [report count, categories] |
+| [Shodan] | [open ports: 22, 80, 443] | [services, OS, org, location] |
+
+### Context
+- **Associated campaigns:** [campaign names if attributed]
+- **Associated threat actors:** [actor names with confidence]
+- **Associated malware families:** [malware names]
+- **ATT&CK techniques:** [if behavioral data available]
+- **First seen / Last seen:** [earliest and latest observation dates across sources]
+- **Related indicators:** [pivoted indicators — associated IPs, domains, hashes]
+
+### Recommended Actions
+1. [Specific action based on verdict — block, monitor, investigate further, dismiss]
+2. [Additional context-dependent recommendation]
+```
+
+4. **Support pivoting.** If initial enrichment reveals related indicators (e.g., a malicious domain resolves to an IP that hosts other malicious domains), offer to enrich the related indicators. This is how a single IOC leads to a full infrastructure map.
+
+### Workflow 3: Threat actor profiling
+
+When asked about a specific threat actor or group:
+
+1. **Query structured sources** — OpenCTI and Feedly for actor profiles, associated campaigns, known TTPs, targeting patterns, and attributed indicators.
+
+2. **Build an actor profile:**
+
+```
+## Threat Actor Profile: [Actor Name]
+**Also known as:** [aliases across naming conventions — Mandiant, CrowdStrike, Microsoft, etc.]
+**Type:** [nation-state / cybercrime / hacktivist / unknown]
+**Attribution confidence:** [confirmed / likely / possible / unattributed]
+**Active since:** [first observed date]
+**Last observed activity:** [most recent reported campaign]
+
+### Targeting
+- **Sectors:** [targeted industries]
+- **Regions:** [geographic targets]
+- **Motivation:** [espionage / financial / disruption / ideological]
 
 ### TTPs (MITRE ATT&CK)
 | Tactic | Technique | Notes |
 |--------|-----------|-------|
-| Initial Access | [T-code: description] | [Actor-specific use] |
-| Execution | [T-code: description] | |
-| Persistence | [T-code: description] | |
-| Defense Evasion | [T-code: description] | |
-| Command & Control | [T-code: description] | |
-| Exfiltration | [T-code: description] | |
+| [Initial Access] | [T1566 Phishing] | [specifics — spearphishing with macro-enabled docs] |
+| [Execution] | [T1059.001 PowerShell] | [specifics] |
+| ... | ... | ... |
 
-### Known infrastructure (IOCs — may be stale)
-[List with dates — flag that IOCs rotate frequently and age rapidly]
+### Recent Campaigns
+- **[Campaign name]** ([date range]): [brief description, targets, outcome]
+- **[Campaign name]** ([date range]): [brief description, targets, outcome]
 
-### Relevance to our organization
-**Targeting relevance:** [High/Medium/Low — based on our sector and geography]
-**Historical activity against similar orgs:** [Known incidents if public]
-**Recommended defensive focus:** [Which TTPs to prioritize in detection engineering]
+### Relevance to [Organization]
+[Assessment of whether this actor's targeting, TTPs, and motivation align with the org's threat profile — this is the judgment section]
 
-### Intelligence sources
-[List public reports, vendor blogs, and platform references — do not reproduce verbatim]
+### Detection Opportunities
+[Specific detection recommendations based on the actor's known TTPs, referencing available detection rules from Security Detections where applicable]
 ```
 
----
+### Workflow 4: Threat hunt hypothesis generation
 
-## Workflow 3: Threat Hunt Hypothesis Generation
+When asked to support proactive threat hunting:
 
-Use when preparing for a proactive threat hunt session. Takes actor TTPs or emerging threat
-intelligence and converts them into testable hypotheses with suggested data sources and queries.
+1. **Identify hunt basis** — What's driving this hunt? Options include:
+   - TI-driven: New threat actor or campaign intelligence suggests possible undetected compromise
+   - Gap-driven: ATT&CK coverage analysis reveals detection blind spots
+   - Anomaly-driven: Unusual activity observed but not yet classified
+   - Compliance-driven: Regulatory requirement to hunt for specific threat categories
 
-### Inputs
+2. **Generate hunt hypotheses** with supporting intelligence:
 
 ```
-Actor / campaign:    [Actor name, CVE, or malware family — or describe threat scenario]
-Hunt window:         [Timeframe to search, e.g., last 90 days]
-Target environment:  [Scope — all endpoints, specific subnet, cloud, identity]
-Known TTPs to focus: [Optional — specific techniques to prioritize]
+## Hunt Hypothesis: [concise hypothesis statement]
+**Basis:** [TI report / ATT&CK gap / anomaly / regulatory]
+**Priority:** [High / Medium / Low]
+**Confidence that this TTP is relevant to us:** [High / Medium / Low — with reasoning]
+
+### Intelligence Support
+[What TI says about this threat — actor, campaign, sector targeting, frequency]
+
+### What to look for
+[Specific observable behaviors, log patterns, or artifacts]
+
+### Data sources needed
+[Which logs, tools, or telemetry to query]
+
+### Sample queries
+[SIEM/EDR queries where possible — KQL for Sentinel, SPL for Splunk, etc. Pull from Security Detections MCP if available]
+
+### Expected results
+- **If found:** [what it means, next steps, escalation path]
+- **If not found:** [what that tells us — clean, insufficient visibility, or wrong hypothesis]
 ```
 
-### Hunt hypothesis template
+## Confidence and source assessment
 
-```markdown
-## Threat Hunt: [Hunt name] — [Date]
+Threat intelligence is only as good as its sourcing. Apply standard intelligence community confidence language:
 
-**Hypothesis:** If [actor/malware] has established a foothold in our environment,
-we would expect to observe [specific behavior] in [specific data source].
+- **High confidence:** Multiple independent, reliable sources with corroborating evidence. Technical indicators validated. Assessment unlikely to change with new information.
+- **Medium confidence:** Some corroborating sources, but gaps exist. Plausible alternative explanations. Assessment could change with new information.
+- **Low confidence:** Single source, or sources with limited reliability. Significant analytical assumptions. Assessment is preliminary.
 
-**Priority:** [High | Medium | Low]
-**Estimated effort:** [Hours or days]
+When sources disagree, present both positions and explain the divergence. A VirusTotal verdict of "clean" combined with an OpenCTI association with a known campaign is more interesting than either data point alone — it could mean the indicator was recently weaponized and detection hasn't caught up, or it could mean a false positive in the TI correlation.
 
-### Hunt hypotheses
+Never state attribution as fact unless multiple high-confidence sources agree. Default to hedged language: "associated with," "attributed by [source] to," "consistent with TTPs used by."
 
-#### Hypothesis 1: [Short name]
-- **Statement:** [Full hypothesis statement]
-- **Data source:** [SIEM index, EDR telemetry, proxy logs, etc.]
-- **Suggested query logic:** [Describe what to search — field names, values, patterns]
-- **Expected volume:** [High/Medium/Low — to set analyst expectations]
-- **True positive indicators:** [What a hit looks like]
-- **False positive risks:** [Common benign activity that mimics this]
+## Handling classification and sharing
 
-[Repeat for each hypothesis]
+Respect Traffic Light Protocol (TLP) markings on intelligence:
+- **TLP:RED** — Named recipients only. Do not include in reports distributed beyond the named audience.
+- **TLP:AMBER+STRICT** — Organization only. Do not share with external parties.
+- **TLP:AMBER** — Organization and clients/customers on need-to-know.
+- **TLP:GREEN** — Community-wide sharing permitted.
+- **TLP:CLEAR** — No restrictions.
 
-### Detection opportunities
-[ATT&CK techniques identified in this hunt that don't have existing detection coverage —
-feed into detection engineering backlog]
-```
+When synthesizing from multiple sources with different TLP levels, the output inherits the most restrictive marking. Note this in the report header.
 
----
+## What this skill does NOT do
 
-## Workflow 4: Daily Threat Brief
-
-Use to produce a structured threat briefing for SOC morning standup or leadership consumption.
-See also the `/threat-brief` command which invokes this workflow directly.
-
-### Brief template
-
-```markdown
-## Threat Brief — [Date]
-
-**Prepared for:** [SOC | Security Leadership | Board]
-**Period:** [Last 24 hours | Last 7 days]
-
-### Today's top threats (sector-relevant)
-1. [Threat/campaign name] — [2-sentence summary] — **Relevance: High/Med/Low**
-2. [Threat/campaign name] — [summary] — **Relevance: High/Med/Low**
-3. [Threat/campaign name] — [summary] — **Relevance: High/Med/Low**
-
-### Vulnerabilities under active exploitation
-| CVE | CVSS | CISA KEV? | Description | Our exposure |
-|-----|------|-----------|-------------|--------------|
-| [CVE-XXXX-XXXXX] | [X.X] | [Yes/No] | [Brief description] | [Exposed/Not exposed/Unknown] |
-
-### Newly observed indicators (sector-relevant, last 24h)
-[IP ranges, domains, campaigns to add to watchlists — flag as actionable]
-
-### Intelligence collection priorities
-[What to watch for in coming period]
-```
-
----
-
-## Working with Tools
-
-### MCP connectors this skill uses
-
-| Connector | Used for | Priority |
-|-----------|----------|----------|
-| **Feedly** | Threat intelligence feeds, actor tracking, news ingestion | High — enables most workflows |
-| **OpenCTI** | Structured threat actor data, IOC correlation, STIX/TAXII | High — primary TI platform |
-| **VirusTotal** | Indicator reputation, malware identification, passive DNS | High — essential for enrichment |
-| **AbuseIPDB** | IP reputation, abuse reports | Medium — supplements VirusTotal |
-| **Shodan** | Internet exposure data for IPs, service fingerprinting | Medium — infrastructure context |
-| **CISA KEV** | Confirmed exploitation status for vulnerabilities | High — free, authoritative |
-| **Cyber Sentinel** | Integrated threat intelligence and analysis | Medium — if deployed |
-| **SIEM** | Indicator correlation against internal telemetry, hunt query execution | High for hunting workflows |
-
-### Graceful degradation
-
-Without MCP connectors, provide raw indicator values and the skill will:
-- Structure the enrichment template for manual population
-- Suggest specific free web tools for each indicator type (VirusTotal web, URLScan, AbuseIPDB web)
-- Generate hunt hypotheses using ATT&CK TTP descriptions for manual query translation
-
----
-
-## What This Skill Does NOT Do
-
-- **Does not provide definitive attribution.** Actor attribution at speed without corroborating intelligence is speculation. Confidence levels are always stated explicitly.
-- **Does not replace a human TI analyst.** Context interpretation, source evaluation, and strategic intelligence assessment require practitioner judgment.
-- **Does not reproduce or scrape proprietary threat reports.** It synthesizes and references; it does not republish vendor-proprietary intelligence.
-- **Does not perform active scanning or reconnaissance.** It queries threat intelligence sources, not target infrastructure.
-- **Does not generate detection rules autonomously.** It generates hunt hypotheses and suggests query logic; detection engineers translate these into production rules with validation.
-- **Does not cover classified intelligence.** This skill operates on commercially available and open-source intelligence only.
+- Make attribution determinations independently — attribution is an analytical judgment that requires human assessment of source reliability, geopolitical context, and alternative explanations
+- Access classified intelligence sources — this skill works with commercially and publicly available intelligence
+- Replace a human threat intelligence analyst's judgment on what matters to the organization
+- Guarantee completeness — threat intelligence is inherently incomplete, and emerging threats may not yet appear in any source
+- Generate offensive tools, exploits, or attack capabilities — this skill is defensive-only

@@ -1,272 +1,135 @@
-# security.local.md — Organization Security Configuration
+# Security Configuration — Organization Playbook
 
-> **DO NOT commit this file.** Add `security.local.md` to your `.gitignore`.
-> This file contains organization-specific configuration that must remain local.
-> Copy this example to `security.local.md` and customize before using the plugin.
+> Copy this file to `security.local.md` and customize for your organization.
+> This file is your org's security identity — it tells the agent who you are,
+> what you care about, and how you operate. Skills reference this file to
+> tailor their behavior to your environment.
+>
+> This file should NOT be committed to public repositories. Add `security.local.md`
+> to your `.gitignore`.
 
----
+## Organization profile
 
-## Organization Profile
+- **Organization:** [Your company name]
+- **Industry:** [Utilities / Healthcare / Financial Services / Technology / Government / etc.]
+- **Regulatory environment:** [List primary regulators — e.g., FERC, NERC, state PUC, FTC, HHS]
+- **Security team size:** [approximate headcount]
+- **Security program maturity:** [Initial / Developing / Defined / Managed / Optimizing — or use your framework's maturity scale]
 
-```
-Organization name:       [Your Organization Name]
-Industry sector:         [Financial Services | Healthcare | Energy/Utilities | Technology |
-                          Manufacturing | Government | Retail | Other]
-Employee count:          [<500 | 500-5,000 | 5,000-50,000 | >50,000]
-Geographic footprint:    [US-only | North America | EMEA | Global]
-Regulatory environment:  [List primary regulators, e.g., SEC, FINRA, OCC, HIPAA/HHS, NERC/FERC]
-Security team size:      [Approximate headcount]
-```
+## Governance philosophy
 
----
+<!-- Define your team's operating philosophy. This shapes how the agent frames
+     recommendations, reports, and escalations. Example below uses PLAID
+     (People Led, AI Driven) — replace with your own or remove. -->
 
-## Active Compliance Frameworks
+We follow a People Led, AI Driven (PLAID) approach to security operations:
+- AI augments human analysts — it does not replace judgment or decision authority
+- Containment and remediation actions require human approval
+- AI-generated findings are recommendations, not conclusions
+- Transparency in AI-assisted analysis: reports note where AI contributed
+- Speed through automation, accuracy through human oversight
 
-List all frameworks your organization actively manages. Skills load the relevant
-framework module from `frameworks/` based on this list.
+## Active compliance frameworks
 
-```
-Primary framework:    [nist-csf-2.0 | iso-27001 | nerc-cip | cmmc | soc2]
-Additional frameworks:
-  - [nist-800-53]
-  - [soc2]
-  - [cmmc]
-  - [Add others as applicable]
+<!-- List the frameworks your organization is actively measured against.
+     Skills will load the corresponding framework modules from frameworks/
+     and apply their control mappings, maturity models, and reporting requirements. -->
 
-Current maturity target (NIST CSF tiers): [Tier 2 → Tier 3 | Tier 3 → Tier 4]
-Next major audit:    [Framework + target date]
-Certification status: [e.g., ISO 27001 certified through 2026-03]
-```
+- **Primary:** NIST CSF 2.0 (current maturity: 2.4, target: 3.0 by Q4 2026)
+- **Regulatory:** NERC CIP (applicable to BES Cyber Systems)
+- **Privacy:** CCPA/CPRA (California consumer data), state-specific privacy laws
+- **Voluntary:** SOC 2 Type II (customer trust, annual audit cycle)
 
----
+## Severity classification
 
-## Risk Appetite
+<!-- Define how your org classifies incident and vulnerability severity.
+     Skills use this for consistent triage and escalation. -->
 
-These settings calibrate how the risk-assessment and compliance-assessment skills
-prioritize findings and recommendations.
+| Severity | Definition | Response SLA | Escalation |
+|----------|-----------|-------------|------------|
+| Critical | Active data exfiltration, ransomware execution, safety system compromise | 15 min initial response | Immediate — CISO + Legal + Exec |
+| High | Confirmed compromise, lateral movement, regulated data exposure | 1 hour initial response | SOC Lead + IR Team |
+| Medium | Suspicious activity requiring investigation, unpatched critical CVE on exposed system | 4 hours initial response | SOC Lead |
+| Low | Policy violation, informational alert, low-risk vulnerability | Next business day | Standard ticket |
 
-```
-Overall risk appetite:     [Conservative | Moderate | Aggressive]
-Risk tolerance by category:
-  Operational:             [Low | Medium | High]
-  Regulatory/compliance:   [Low | Medium | High]
-  Reputational:            [Low | Medium | High]
-  Technology/cyber:        [Low | Medium | High]
+## Escalation contacts
 
-Risk acceptance authority:
-  Low risk (<$X):          [Role, e.g., Security Manager]
-  Medium risk ($X–$Y):     [Role, e.g., CISO]
-  High risk (>$Y):         [Role, e.g., CRO or Board]
+<!-- Skills reference these for escalation recommendations. -->
 
-Risk quantification methodology: [Qualitative matrix | FAIR | Other]
-```
+- **SOC Lead:** [name / role / contact method]
+- **Incident Commander (on-call):** [rotation schedule or contact]
+- **CISO / CTSO:** [name / contact method / when to escalate]
+- **Legal counsel:** [name / contact — for breach notification decisions]
+- **Communications:** [name / contact — for public-facing incident response]
+- **Executive sponsor:** [name / title — for business impact decisions]
 
----
+## Tool stack
 
-## Security Tool Stack
+<!-- Map your tools to the connector categories used in .mcp.json.
+     Skills use this to know what's available and what queries to construct. -->
 
-List deployed tools by category. Skills use this to route MCP queries to the right
-connectors and to tailor recommendations to your actual environment.
+| Category | Tool(s) | MCP Available | Notes |
+|----------|---------|---------------|-------|
+| SIEM / Log Management | [e.g., Microsoft Sentinel] | Yes / No | [query language, retention period] |
+| SOAR / Automation | [e.g., Sentinel SOAR] | Yes / No | [approved playbook scope] |
+| Identity & Access | [e.g., Entra ID, SailPoint, CyberArk] | Yes / No | [which for what — IAM vs PAM vs SSO] |
+| Vulnerability Scanner | [e.g., Qualys, Defender Vuln Mgmt] | Yes / No | [scan frequency, scope] |
+| EDR / Endpoint | [e.g., Defender for Endpoint] | Yes / No | [isolation capability, OS coverage] |
+| Ticketing | [e.g., ServiceNow] | Yes / No | [incident vs request workflows] |
+| GRC Platform | [e.g., Archer, Hyperproof] | Yes / No | [what's tracked here vs elsewhere] |
+| Threat Intelligence | [e.g., Feedly, OpenCTI] | Yes / No | [commercial vs open source feeds] |
+| Cloud Security | [e.g., Defender for Cloud] | Yes / No | [cloud providers in scope] |
+| Email / Collaboration | [e.g., Exchange, Teams] | Yes / No | [notification and escalation channels] |
+| Documentation | [e.g., SharePoint, Confluence] | Yes / No | [where policies, evidence, reports live] |
 
-### SIEM / Log Management
-```
-Primary SIEM:        [Microsoft Sentinel | Splunk | Chronicle | Elastic | Other]
-Log retention:       [Hot: X days | Warm: Y days | Cold: Z days]
-UEBA enabled:        [Yes | No]
-```
+## AI governance
 
-### SOAR / Automation
-```
-Platform:            [Sentinel SOAR | Splunk SOAR/Phantom | Palo Alto XSOAR | Tines | None]
-Automation maturity: [Ad hoc | Playbook-driven | Fully automated with human review]
-```
+<!-- Define guardrails for how AI agents operate in your environment.
+     The ai-agent-review and ai-governance skills reference this section. -->
 
-### Endpoint / EDR
-```
-Platform:            [Microsoft Defender for Endpoint | CrowdStrike | SentinelOne | Other]
-Coverage:            [~X% of endpoints]
-Mobile (MDM):        [Intune | Jamf | Other | None]
-```
+**Approved AI platforms:** [e.g., Claude (Anthropic), internal ML models — list what's sanctioned]
 
-### Identity & Access Management
-```
-Primary IdP:         [Entra ID | Okta | Ping | Other]
-PAM solution:        [CyberArk | BeyondTrust | Delinea | None]
-IGA platform:        [SailPoint | Saviynt | None]
-MFA coverage:        [% of users | All users | Admin only]
-Privileged accounts: [Approximate count]
-```
+**Data classification for AI:**
+- **Allowed in AI context:** [e.g., public data, internal non-sensitive, anonymized metrics]
+- **Restricted — requires approval:** [e.g., PII, customer data, financial data]
+- **Prohibited:** [e.g., BES Cyber System details, authentication credentials, classified/regulated data with explicit prohibitions]
 
-### Vulnerability Management
-```
-Scanner:             [Qualys | Tenable | Rapid7 | Microsoft Defender | Other]
-Scan frequency:      [Continuous | Weekly | Monthly]
-CMDB/Asset inventory: [ServiceNow | Axonius | Tanium | Other | None]
-SLA targets:
-  Critical (CVSS 9+):  X days
-  High (CVSS 7–8.9):   Y days
-  Medium (CVSS 4–6.9): Z days
-  Low (<4):            As-scheduled
-```
+**Agent deployment requirements:**
+- All plugins/skills require security review before deployment (use ai-agent-review skill)
+- MCP connections to production systems require approval from [role/team]
+- Agents with write access to any system require human-in-the-loop confirmation
+- Agent activity must be logged to [logging destination]
+- Quarterly review of all active agent deployments and permissions
 
-### Cloud Security
-```
-Cloud providers:     [Azure | AWS | GCP | Multi-cloud]
-CSPM:                [Defender for Cloud | Prisma Cloud | Wiz | Native tools]
-Container/K8s:       [AKS | EKS | GKE | None]
-```
+**Human-in-the-loop requirements by risk tier:**
+- **Tier 1 (read-only analysis):** Agent can operate autonomously, human reviews output
+- **Tier 2 (recommendations with action):** Agent recommends, human approves and executes
+- **Tier 3 (direct system interaction):** Agent prepares action, human approves, agent executes with audit trail
+- **Tier 4 (critical systems):** No autonomous agent access — human performs all actions, agent assists with analysis only
 
-### GRC Platform
-```
-Platform:            [Archer | ServiceNow GRC | LogicGate | Hyperproof | Spreadsheets | None]
-Risk register:       [In GRC platform | Separate tool | Spreadsheet]
-Policy management:   [In GRC platform | SharePoint | Confluence | Other]
-```
+## Reporting and metrics
 
-### Ticketing / Workflow
-```
-Primary:             [ServiceNow | Jira | Zendesk | Other]
-Incident tracking:   [Same as above | Separate system]
-```
+<!-- Define what leadership needs to see and how often.
+     The security-reporting skill uses this to generate appropriate reports. -->
 
-### Threat Intelligence
-```
-Platforms:           [Feedly | OpenCTI | MISP | Recorded Future | Other]
-Feeds subscribed:    [CISA KEV | FS-ISAC | H-ISAC | TAXII feeds | Other]
-TI team:             [Dedicated team | Ad hoc | External MSSP | None]
-```
+**Board reporting:** Quarterly — risk posture summary, major incidents, compliance status, program progress
+**ELT reporting:** Monthly — KPI dashboard, NIST CSF maturity progress, open risk items, budget status
+**Operational reporting:** Weekly — alert volume and disposition, vulnerability SLA compliance, incident status
+**Key metrics tracked:**
+- NIST CSF 2.0 maturity score by function (Govern, Identify, Protect, Detect, Respond, Recover)
+- Mean time to detect (MTTD) and mean time to respond (MTTR)
+- Vulnerability remediation SLA compliance by severity
+- Phishing simulation click rates
+- Access review completion rates
+- [Add your org-specific KPIs]
 
-### Email / Collaboration
-```
-Email platform:      [Microsoft 365 | Google Workspace | Other]
-Collaboration:       [Teams | Slack | Other]
-```
+## Notification and regulatory obligations
 
----
+<!-- Map your notification requirements so incident response and compliance
+     skills can flag deadlines automatically. -->
 
-## Escalation Contacts
-
-```
-Security Operations Center:
-  SOC lead:          [Name, email, phone/Teams]
-  After-hours:       [Pager/on-call method]
-
-Incident Response:
-  IR lead:           [Name, contact]
-  External IR retainer: [Firm name, contact]
-
-Security Leadership:
-  CISO:              [Name, contact]
-  Deputy CISO:       [Name, contact]
-
-Legal / Privacy:
-  General Counsel:   [Name, contact]
-  Privacy Officer:   [Name, contact]
-
-Communications / PR:
-  Contact:           [Name, contact]
-
-Executive team (for major incidents):
-  CEO / COO:         [Contact method]
-
-Regulatory contacts:
-  [Regulator name]:  [Contact / notification method]
-```
-
----
-
-## Incident Severity Definitions
-
-Calibrate to match your organization's classification scheme. The incident-response
-skill will use these to set severity in triage output.
-
-```
-SEV 1 (Critical):
-  Definition:   Active breach with data exfiltration, ransomware execution, or
-                significant operational impact. Executive notification required.
-  SLA:          Acknowledge within 15 min, contain within 4 hours.
-
-SEV 2 (High):
-  Definition:   Confirmed compromise of critical system or significant unauthorized
-                access. CISO notification required.
-  SLA:          Acknowledge within 30 min, contain within 24 hours.
-
-SEV 3 (Medium):
-  Definition:   Suspicious activity requiring investigation, policy violation with
-                potential impact.
-  SLA:          Acknowledge within 2 hours, resolve within 72 hours.
-
-SEV 4 (Low):
-  Definition:   Policy violation, low-risk event requiring documentation.
-  SLA:          Acknowledge within 8 hours, resolve within 2 weeks.
-```
-
----
-
-## AI Governance Policy
-
-The ai-governance and ai-agent-review skills use this section to calibrate
-recommendations against your organization's stated AI policy.
-
-```
-AI governance philosophy:  [PLAID (default) | Organization-specific (describe below)]
-AI risk appetite:          [Conservative | Moderate | Aggressive]
-
-Approved AI tools:
-  - [Tool name, approved use cases, data classification limit]
-
-Prohibited AI use cases:
-  - Feeding PII/PHI/financial data to external AI models without DPA
-  - [Add organization-specific prohibitions]
-
-Human-in-the-loop requirements:
-  High-stakes decisions:   Always required (examples: access termination, IR containment)
-  Routine analysis:        AI-assisted with analyst review
-  Reporting:               AI draft with human review and sign-off
-
-AI deployment approval:
-  Approver:      [Role, e.g., CISO + AI Governance Committee]
-  Process:       [Link to AI intake process or describe here]
-
-Data classification limits for AI:
-  Public data:         Approved for external AI
-  Internal data:       Approved for approved internal AI only
-  Confidential:        Internal AI only with DLP controls
-  Restricted/Secret:   No AI processing without explicit approval
-```
-
----
-
-## Reporting and Metrics
-
-The security-reporting skill uses these targets to evaluate KPI performance.
-
-```
-Board reporting cadence:   [Quarterly | Biannual | Annual]
-ELT reporting cadence:     [Monthly | Quarterly]
-Operational metrics cadence: [Weekly | Bi-weekly]
-
-Key metrics tracked:
-  Mean Time to Detect (MTTD):     Target: X hours
-  Mean Time to Respond (MTTR):    Target: Y hours
-  Vulnerability SLA compliance:   Target: >Z%
-  Phishing simulation rate:       Target: <Z% click rate
-  Security training completion:   Target: >Z%
-  Patch compliance (critical):    Target: >Z% within SLA
-  Access review completion:       Target: 100% within period
-
-Board-level risk indicators:
-  - [List the 3-5 metrics your board tracks]
-```
-
----
-
-## Custom Notes
-
-Use this section for any organization-specific context that doesn't fit the categories
-above — historical incidents, known technical debt, regulatory findings in remediation,
-or any standing exceptions to standard workflows.
-
-```
-[Free-form organization-specific notes]
-```
+| Trigger | Regulation | Notification deadline | Notify whom | Notes |
+|---------|-----------|----------------------|-------------|-------|
+| Personal data breach affecting CA residents | CCPA/CPRA | Without unreasonable delay | Affected individuals + CA AG if >500 | Assess with legal |
+| BES Cyber System incident | NERC CIP-008 | 1 hour (for reportable events) | E-ISAC, CISA | Specific criteria for reportable events |
+| [Add your obligations] | | | | |

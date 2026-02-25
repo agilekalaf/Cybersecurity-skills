@@ -7,77 +7,66 @@ pulling current threat actor activity, actively exploited vulnerabilities, and e
 
 ```
 /threat-brief
-/threat-brief --audience soc
-/threat-brief --audience leadership --period weekly
-/threat-brief --sector financial-services --region north-america
+/threat-brief --sector utilities --period 24h
 /threat-brief --focus ransomware
+/threat-brief --focus apt --sector energy
+/threat-brief --cve-only
 ```
 
-## What This Command Does
+## What this command does
 
-Invokes the threat-intelligence skill (Workflow 4: Daily Threat Brief) to produce a structured
-briefing covering current threat actor activity, actively exploited CVEs, and sector-relevant
-campaigns. Output is calibrated to the audience — technical detail for SOC, strategic framing for
-leadership. Sector and region default to values in `security.local.md` if not specified.
+This command produces a situational awareness briefing by querying your connected threat intelligence sources, filtering for relevance to your organization, and synthesizing the results into an actionable format. Think of it as your AI-augmented intelligence analyst doing the morning brief.
 
 ## Parameters
 
-| Parameter | Values | Default |
-|-----------|--------|---------|
-| `--audience` | `soc`, `leadership`, `board` | `soc` |
-| `--period` | `daily`, `weekly`, `monthly` | `daily` |
-| `--sector` | Industry sector name | From `security.local.md` |
-| `--region` | `north-america`, `emea`, `apac`, `global` | From `security.local.md` |
-| `--focus` | `ransomware`, `nation-state`, `phishing`, `vulnerabilities`, `all` | `all` |
+- **--sector:** Override the sector from `security.local.md`. Useful when preparing briefings for peer organizations or sector partners.
+- **--period:** Time window for intelligence gathering. Default: 72 hours. Options: `24h`, `48h`, `72h`, `7d`, `30d`.
+- **--focus:** Narrow the briefing to a specific threat category. Options: `ransomware`, `apt`, `vulnerability`, `insider`, `supply-chain`, `sector` (sector-specific threats only).
+- **--cve-only:** Produce only the vulnerability exploitation intelligence section — quick view of what's being actively exploited.
+- **--audience:** Tailor depth and language. Options: `soc` (technical, detection-focused), `leadership` (business impact, strategic), `full` (comprehensive). Default: `full`.
 
 ## Workflow
 
-1. Load `security.local.md` for sector, region, and tool configuration
-2. Query Feedly and OpenCTI for sector-relevant threat activity in the specified period
-3. Pull CISA KEV for newly added exploited vulnerabilities
-4. Query VirusTotal and threat intelligence platforms for active campaigns
-5. Synthesize into the threat-intelligence skill's Brief Template
-6. Format output for the specified audience
+1. **Load organizational context** from `security.local.md` — sector, critical assets, intelligence requirements, tool stack.
+
+2. **Query connected intelligence sources** using the threat-intelligence skill:
+   - Feedly Threat Graph for trending threats and campaigns
+   - OpenCTI for structured threat data and recent reports
+   - CISA KEV for newly exploited vulnerabilities
+   - Sector ISAC feeds if configured
+   - MISP for community-sourced indicators
+
+3. **Filter for organizational relevance** — sector targeting, technology overlap, geographic relevance, TTP overlap with detection gaps, severity threshold.
+
+4. **Synthesize into briefing format** appropriate for the audience parameter.
+
+5. **Generate detection recommendations** — for priority items, check Security Detections for existing rules covering the observed TTPs and flag coverage gaps.
 
 ## Output
 
-**For `--audience soc`:**
-- Top 3-5 active threats with technical IOCs and ATT&CK technique references
-- Newly exploited CVEs relevant to your tool stack
-- Indicators to add to watchlists
-- Hunt hypotheses for highest-priority threats
+A structured briefing containing:
+- **Priority items** (3-5) requiring team attention or action, with relevance justification and recommended actions
+- **Vulnerability exploitation intelligence** table with CVEs actively being weaponized
+- **Threat landscape summary** of broader trends
+- **Intelligence gaps** where available sources couldn't answer key questions
+- **Detection artifacts** where actionable TTPs map to deployable rules
 
-**For `--audience leadership`:**
-- 1-paragraph executive summary of the threat environment
-- Risk-framed description of top threats (business impact language)
-- Recommended actions at program level
-- No raw IOCs or technical detail
+## When to use this
 
-**For `--audience board`:**
-- 3-5 bullet strategic summary
-- Comparison to prior period ("threat level trending up/stable/down")
-- Single recommended decision or awareness item
-
-## When to Use This
-
-- **SOC morning standup:** Daily briefing to orient the team before shift
-- **Weekly leadership update:** Threat context for security leadership review
-- **After a major industry incident:** "What does [recent major breach] mean for us?"
-- **Board meeting prep:** Threat landscape slide background
-- **New intelligence triggers:** When a significant new threat emerges requiring rapid assessment
+- Start of shift / start of day — get situational awareness before diving into the queue
+- Preparing for leadership briefings — generate the raw intelligence, then tailor for your audience
+- After a major industry event — quickly assess whether a newly reported campaign or vulnerability affects your environment
+- Weekly threat review meetings — produce the standing briefing that grounds the discussion
 
 ## Dependencies
 
-**Required:** At least one of: Feedly, OpenCTI, or CISA KEV access (free, no MCP required for KEV)
+**Required:** At least one strategic intelligence source connected via MCP (Feedly or OpenCTI).
 
-**Recommended:** Feedly + OpenCTI + VirusTotal for full workflow. CISA KEV integration for
-vulnerability exploitation status.
-
-**Minimal mode:** Without MCP connections, the command generates a template and asks the analyst
-to populate it from manual sources, with structured guidance on what to look for.
+**Recommended:** Feedly + OpenCTI + CISA KEV + Security Detections for a complete briefing. The command degrades gracefully — fewer sources means a less comprehensive briefing, but it will work with whatever is available and note the gaps.
 
 ## Related
 
-- **Skill:** `skills/threat-intelligence/SKILL.md` (Workflow 4 — this command is a direct entry point)
-- **Command:** `/investigate` — for deep-dive investigation of a specific indicator or actor
-- **Command:** `/triage-alert` — for operational response when a threat becomes an incident
+- `/investigate` — Deep-dive on a specific IOC, actor, or incident (reactive, specific)
+- `threat-intelligence` skill — The domain knowledge that powers this command
+- `incident-response` skill — Consumes TI during active incident investigation
+- `security-reporting` skill — Can incorporate threat briefings into leadership reports

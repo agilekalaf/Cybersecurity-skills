@@ -1,300 +1,178 @@
 ---
 name: incident-response
-description: >
-  Security incident response, IR, alert triage, breach investigation, containment, eradication, recovery,
-  forensic investigation, DFIR, compromise assessment, ransomware response, phishing investigation,
-  account takeover, data breach, insider threat, "we've been hacked", "suspicious activity",
-  "something is wrong on the network", malware outbreak, lateral movement investigation,
-  security incident playbook, SOC workflow, incident handling.
+description: Triage security alerts, investigate incidents, recommend containment actions, and guide post-incident review. Use this skill whenever the user mentions alerts, incidents, detections, IOCs, suspicious activity, compromise, breach investigation, containment, eradication, or post-mortem analysis. Also trigger when the user pastes log entries, alert payloads, SIEM output, EDR detections, or asks about threat actor TTPs in the context of an active or recent event. This skill supports the /triage-alert and /investigate commands.
 ---
 
 # Incident Response
 
-This skill guides you through the full incident response lifecycle — from initial alert triage through
-containment, eradication, and recovery — with structured output at each phase designed to support both
-real-time decision-making and post-incident documentation. It implements a PICERL-based workflow
-(Preparation, Identification, Containment, Eradication, Recovery, Lessons Learned) adapted for
-AI-augmented response.
+An AI-augmented workflow for security operations teams handling the full incident lifecycle — from initial alert triage through post-incident review. This skill is designed to work alongside human analysts, not replace them. The AI accelerates pattern recognition, evidence correlation, and documentation while humans make containment decisions and exercise judgment on business impact.
 
 > **Philosophy: People Led, AI Driven (PLAID)**
->
-> In incident response, speed matters — but wrong decisions made fast are worse than correct decisions
-> made carefully. This skill accelerates the analytical and documentation work (IOC enrichment, ATT&CK
-> mapping, timeline reconstruction, stakeholder communication drafts) so that the human responder can
-> focus on decision-making, judgment calls, and actions that carry real consequences: network isolation,
-> account suspension, executive notification. Every containment or eradication action this skill recommends
-> requires human authorization before execution. The AI proposes; the analyst decides.
+> AI handles the speed-intensive analytical work — log correlation, IOC enrichment, timeline reconstruction, report drafting. Humans retain decision authority on containment actions, escalation, and communication. Every recommendation from this skill should be framed as exactly that — a recommendation for the analyst to evaluate.
 
----
+## Before you begin
 
-## Before You Begin
+Check for the organization's local configuration in `security.local.md`. This file defines:
+- Active compliance frameworks (which shapes documentation and notification requirements)
+- Escalation contacts and thresholds
+- Tool stack and available MCP connectors
+- Severity classification criteria specific to the org
+- Notification and regulatory reporting obligations
 
-Load your `security.local.md` to calibrate this skill to your environment. The skill will use:
+If no local config exists, use the defaults defined in this skill and note gaps where org-specific context would improve the analysis.
 
-- **Severity definitions** — to correctly classify incidents using your organization's tiers
-- **Escalation contacts** — to generate correctly addressed notification drafts
-- **Tool stack** — to route enrichment queries to the right MCP connectors
-- **Incident SLAs** — to flag when response timelines are approaching breach
+## Roles this skill serves
 
-If `security.local.md` is not available, the skill uses generic severity definitions (Critical/High/Medium/Low)
-and will note where organization-specific calibration is needed.
+- **SOC Analyst (Tier 1-2):** Alert triage, initial investigation, evidence collection
+- **Incident Responder (Tier 2-3):** Deep investigation, containment recommendations, root cause analysis
+- **Security Leadership:** Incident status reporting, impact assessment, executive communication
 
----
+Tailor depth and language to the role. A Tier 1 analyst triaging an alert needs a quick severity assessment and next steps. A Tier 3 responder investigating a confirmed incident needs deep technical analysis. Leadership needs business impact translation.
 
-## Roles This Skill Serves
+## Incident response workflow
 
-**Primary:** Security Operations (SOC analysts, incident responders)
+### Phase 1: Alert triage
 
-**Also useful for:**
-- Security Architecture: post-incident architectural gap identification
-- Security Leadership: executive communication and board reporting on significant incidents
-- GRC: regulatory notification requirements and compliance implications of incidents
+When presented with an alert, detection, or suspicious activity indicator:
 
----
+1. **Classify the alert** using available context:
+   - What detection source generated this? (SIEM rule, EDR behavioral detection, user report, threat intel match, anomaly detection)
+   - What is the initial severity estimate? Use the org's classification matrix from `security.local.md` if available, otherwise apply a standard 4-tier model: Critical (active data exfiltration or system destruction), High (confirmed compromise with lateral movement potential), Medium (suspicious activity requiring investigation), Low (likely benign anomaly or policy violation)
+   - Does this correlate with any known campaigns or threat actor TTPs?
 
-## Phase 1: Alert Triage and Initial Classification
+2. **Enrich the indicators** using available tools:
+   - Query threat intelligence feeds via MCP connectors (Feedly, OpenCTI, VirusTotal, AbuseIPDB) for IOC reputation, associated campaigns, and known TTPs
+   - Map observed behaviors to MITRE ATT&CK techniques — identify the tactic (what the adversary is trying to achieve) and technique (how they're doing it)
+   - Check internal sources — has this indicator appeared before in our environment? Any related tickets or prior incidents?
 
-Use this phase when receiving a new alert, SIEM detection, user report, or external notification.
-Goal: determine in under 15 minutes whether this is a true positive requiring full IR engagement.
-
-### Inputs for triage
-
-Provide as much of the following as available:
+3. **Produce a triage summary** with this structure:
 
 ```
-Alert source:         [SIEM rule name | EDR detection | User report | External notification]
-Alert timestamp:      [UTC preferred]
-Affected asset(s):    [Hostname, IP, user account, application]
-Alert summary:        [Copy-paste raw alert or describe in plain language]
-Initial indicators:   [IPs, domains, hashes, email addresses, file paths]
-Asset criticality:    [Business context for affected system if known]
-```
+## Alert Triage Summary
 
-### Triage output template
+**Alert:** [name/ID from detection source]
+**Source:** [SIEM rule / EDR detection / user report / etc.]
+**Time:** [detection timestamp]
+**Severity:** [Critical / High / Medium / Low] — [one-line justification]
 
-```markdown
-## Alert Triage: [Alert ID or brief description] — [Date]
+**What happened:** [2-3 sentence plain-language description of the observed activity]
 
-**Disposition:** [True Positive | Likely True Positive | Likely False Positive | False Positive]
-**Severity:** [SEV 1 Critical | SEV 2 High | SEV 3 Medium | SEV 4 Low]
-**Confidence:** [High | Medium | Low] — [one-sentence rationale]
+**Indicators:**
+- [IOC type]: [value] — [enrichment result: reputation, associated campaigns, first/last seen]
+- [Additional IOCs as applicable]
 
-### What happened (initial understanding)
-[2-4 sentence summary of what the alert indicates, in plain language]
+**ATT&CK Mapping:**
+- Tactic: [TA####] [Tactic Name]
+- Technique: [T####] [Technique Name]
+- [Sub-technique if identifiable]
 
-### Affected scope (known at triage)
-| Asset | Type | Criticality | Owner |
-|-------|------|-------------|-------|
-| [hostname/IP/user] | [Endpoint/Server/Account/Network] | [Critical/High/Med/Low] | [Team or contact] |
+**Affected Assets:** [hostname(s), IP(s), user account(s), business context if known]
 
-### ATT&CK mapping (initial)
-| Tactic | Technique | Confidence |
-|--------|-----------|------------|
-| [e.g., Initial Access] | [T1566.001 Spearphishing Attachment] | [High/Med/Low] |
-
-### Indicators of Compromise
-| Indicator | Type | Context | Enrichment status |
-|-----------|------|---------|-------------------|
-| [value] | [IP/Domain/Hash/Email] | [Where observed] | [Pending/Clean/Malicious] |
-
-### Immediate recommended actions
-1. [Most urgent action — analyst decision required]
+**Recommended Next Steps:**
+1. [Specific investigative action with tool/data source to use]
 2. [Second action]
-3. [Preserve/collect evidence actions]
+3. [Escalation recommendation if warranted, with justification]
 
-### Next phase
-[Recommend: Close as FP | Monitor | Open SEV X incident | Escalate immediately]
+**Confidence Level:** [High / Medium / Low] — [what would increase confidence]
 ```
 
----
+### Phase 2: Investigation
 
-## Phase 2: Investigation and Scope Determination
+When an alert has been triaged and requires deeper investigation, or when the user invokes `/investigate`:
 
-Use this phase after confirming a true positive. Goal: determine the full blast radius —
-what was accessed, what was exfiltrated, how the attacker got in, and how far they've moved.
+1. **Build a timeline.** This is the backbone of any investigation. Reconstruct the sequence of events using available log sources — work backwards from the detection and forwards from the earliest related indicator. Timestamps matter enormously; normalize everything to UTC and note timezone assumptions.
 
-### Investigation queries to run (via MCP tools)
+2. **Determine scope.** Using the timeline, identify all potentially affected systems, accounts, and data. Query identity platforms (Entra ID, SailPoint, CyberArk via MCP) for account activity and privilege levels. Query endpoint tools (Defender, CrowdStrike, SentinelOne via MCP) for process execution, network connections, and file activity on affected hosts.
 
-- **SIEM:** Timeline of events for affected accounts and hosts (±4 hours around initial alert)
-- **EDR:** Process tree, file writes, network connections, persistence mechanisms on affected endpoints
-- **Identity:** Authentication logs — successful and failed — for affected accounts
-- **Network:** Firewall/proxy logs for external communications from affected assets
-- **Email:** If phishing suspected, pull message headers, attachments, recipients, and any link clicks
+3. **Identify the attack path.** Map the full chain from initial access through the current state of the intrusion. Use ATT&CK as the organizing framework — this ensures nothing is missed and produces output that's immediately useful for reporting and threat intelligence sharing. Key questions to answer: How did the adversary get in? What did they do after initial access? Have they established persistence? Is there evidence of lateral movement? Has data been accessed or exfiltrated?
 
-### Investigation output template
+4. **Assess business impact.** Translate technical findings into business terms. What data or systems are at risk? What's the potential regulatory exposure? What business processes are affected? This is where the compliance framework modules become relevant — load the applicable frameworks from `frameworks/` based on `security.local.md` to determine notification obligations, documentation requirements, and regulatory timelines.
 
-```markdown
-## Incident Investigation: [Incident ID] — [Date]
+5. **Produce an investigation report** suitable for the audience. For technical responders, include full IOC lists, timeline details, and tool-specific queries. For leadership, lead with business impact and recommended decisions.
 
-**Incident type:** [Malware | Ransomware | Account Compromise | Data Exfiltration |
-                    Insider Threat | Phishing | Unauthorized Access | Other]
-**Estimated start time:** [When attacker activity appears to have begun]
-**Detection lag:** [Time between estimated start and detection]
+### Phase 3: Containment recommendations
 
-### Attack timeline
-| Time (UTC) | Event | Source | Confidence |
-|------------|-------|--------|------------|
-| [timestamp] | [What happened] | [Log source] | [High/Med/Low] |
+Based on investigation findings, recommend containment actions. Frame these as options with tradeoffs, not directives — the human analyst or incident commander makes the call.
 
-### Entry vector
-[How the attacker got in — phishing, exposed service, credential stuffing, insider, etc.]
-[Confidence level and supporting evidence]
+For each containment recommendation:
+- **Action:** What specifically to do (isolate host, disable account, block IP range, revoke sessions)
+- **Impact:** What business processes or users this will affect
+- **Urgency:** How time-sensitive this is and what worsens if delayed
+- **Reversibility:** How easily this can be undone if it proves unnecessary
+- **Tool:** Which platform executes this action (note if MCP connector is available for automated execution vs. manual action required)
 
-### Confirmed scope
-- Systems accessed: [List]
-- Accounts compromised: [List]
-- Data potentially accessed: [Classification and volume if known]
-- Lateral movement observed: [Yes/No — describe if yes]
-- Persistence mechanisms identified: [List]
-- Data exfiltration evidence: [Yes/No/Unknown — describe if yes]
+Containment actions that affect production systems or large user populations should always be flagged for human approval, regardless of severity. The AI's role is to prepare the containment options quickly and clearly — not to execute them autonomously.
 
-### ATT&CK kill chain mapping
-| Phase | Tactic | Technique(s) | Evidence |
-|-------|--------|--------------|----------|
-| [1] | [Reconnaissance] | [T1595] | [Source] |
-| [2] | [Initial Access] | [T1566.001] | [Source] |
-| ... | ... | ... | ... |
+### Phase 4: Post-incident review
 
-### Regulatory notification triggers
-- Personal data involved: [Yes/No/Unknown]
-- HIPAA breach threshold: [Triggered/Not triggered/Unknown]
-- Applicable breach notification law: [State/GDPR/CCPA/etc. — assess per org's footprint]
-- Notification deadline: [If triggered, note the clock start and deadline]
+After an incident is resolved, guide the post-incident review process:
+
+1. **Generate a draft incident timeline** from all collected evidence, suitable for a post-mortem meeting.
+
+2. **Identify process gaps** — where did detection, investigation, or response fall short? Map these to specific improvement recommendations. Be concrete: "Deploy Sysmon with config X on file servers" is useful; "improve monitoring" is not.
+
+3. **Draft the post-incident report** using the org's template if available, otherwise use:
+
+```
+## Post-Incident Report
+
+**Incident ID:** [tracking number]
+**Severity:** [final classification]
+**Duration:** [detection to containment] / [detection to eradication] / [total]
+**Executive Summary:** [3-5 sentences covering what happened, impact, and outcome]
+
+**Timeline:** [chronological event reconstruction]
+
+**Root Cause:** [what enabled the initial access or failure]
+
+**Impact Assessment:**
+- Systems affected: [count and description]
+- Data at risk: [classification and scope]
+- Business impact: [operational, financial, reputational]
+- Regulatory implications: [notification requirements, filing deadlines]
+
+**Response Effectiveness:**
+- What worked well
+- What could be improved
+- Detection gap analysis
+
+**Remediation Actions:**
+- [Completed actions with dates]
+- [Planned actions with owners and deadlines]
+
+**Lessons Learned:** [specific, actionable takeaways]
 ```
 
----
+3. **Map findings to compliance frameworks.** If the org operates under NIST CSF, NERC CIP, or other frameworks, map both the incident itself and the response gaps to specific control areas. This feeds directly into the compliance-assessment skill's maturity tracking. Load the relevant framework module(s) from `frameworks/` as needed.
 
-## Phase 3: Containment
+## Working with tools
 
-Containment actions carry real consequences. Present recommendations for analyst authorization;
-do not execute autonomously.
+This skill integrates with security tools through MCP connectors defined in `.mcp.json`. The key integration categories for incident response are:
 
-### Containment options by incident type
+- **SIEM/Log Management** — Query logs, retrieve alert details, search for related events
+- **EDR/Endpoint** — Host isolation, process details, file activity, network connections
+- **Identity & Access** — Account status, privilege levels, session management, authentication logs
+- **Threat Intelligence** — IOC enrichment, campaign correlation, ATT&CK mapping
+- **Ticketing** — Create/update incident tickets, track remediation tasks
+- **SOAR** — Trigger automated playbooks where approved by org policy
 
-| Incident Type | Short-term Containment | Long-term Containment |
-|---------------|----------------------|----------------------|
-| Account compromise | Disable account, revoke sessions/tokens | Reset credentials, review all activity, MFA enforcement |
-| Endpoint malware | Network isolation (via EDR) | Reimage, restore from clean backup |
-| Ransomware | Isolate affected segment, disable file shares | Identify patient zero, preserve forensics |
-| Data exfiltration | Block egress destinations, preserve logs | Revoke credentials, DLP controls |
-| Insider threat | Preserve evidence BEFORE alerting — legal hold | HR/Legal process, account suspension |
-| Phishing campaign | Block sender/domain, pull similar messages | User awareness notification |
+When a tool isn't available via MCP, note what you would query and suggest the analyst check manually. The skill should degrade gracefully — incomplete tool coverage reduces speed but shouldn't break the workflow.
 
-### Containment decision record template
+## Escalation guidance
 
-```markdown
-## Containment Decision Record — [Incident ID]
+Recommend escalation when:
+- Severity is Critical or High and the current analyst is Tier 1
+- Evidence suggests an advanced persistent threat or nation-state actor
+- The incident involves regulated data (PII, PHI, financial) with potential notification obligations
+- Containment requires actions beyond the analyst's authorization level
+- The incident scope is expanding faster than the current team can investigate
 
-**Decision made by:** [Name, Role]
-**Decision timestamp:** [UTC]
+Include specific escalation contacts from `security.local.md` when available. When not configured, recommend escalation to the incident commander or security leadership and note that local escalation paths should be configured.
 
-### Actions authorized
-| Action | Target | Business impact | Authorized by |
-|--------|--------|----------------|---------------|
-| [Isolate endpoint] | [hostname] | [Service X unavailable] | [Name] |
+## What this skill does NOT do
 
-### Actions deferred and rationale
-| Action | Rationale for deferral |
-|--------|----------------------|
-| [Action considered] | [Why not taken yet — evidence preservation, business continuity, etc.] |
-
-### Stakeholders notified
-| Role | Notified at | Method |
-|------|-------------|--------|
-| [CISO] | [Time] | [Email/Teams/Phone] |
-```
-
----
-
-## Phase 4: Eradication and Recovery
-
-### Eradication checklist
-
-- [ ] All persistence mechanisms identified and removed
-- [ ] All compromised credentials rotated
-- [ ] All attacker-controlled infrastructure blocked (IPs, domains, C2)
-- [ ] Malware artifacts removed or systems reimaged
-- [ ] Vulnerabilities exploited during attack patched or mitigated
-- [ ] Integrity of backups confirmed before recovery
-
-### Recovery validation
-
-Before returning systems to production, verify:
-- System imaging/restoration completed from known-clean backup
-- Security controls re-enabled and functioning (AV/EDR active, logging active)
-- No evidence of reinfection in first 24 hours post-recovery
-- Access controls reviewed and tightened as appropriate
-
----
-
-## Phase 5: Lessons Learned
-
-### Post-Incident Review template
-
-```markdown
-## Post-Incident Review: [Incident ID]
-**Date of review:** [Date]
-**Facilitator:** [Name]
-**Attendees:** [Teams represented]
-
-### Incident summary (for record)
-[2-3 sentences — what happened, how it was detected, how it was resolved]
-
-### Timeline (final)
-[Complete attack and response timeline]
-
-### What worked well
-- [Detection controls that fired]
-- [Response actions that were effective]
-- [Team coordination that worked]
-
-### What needs improvement
-- [Detection gaps — what should we have caught earlier?]
-- [Response delays — where were the bottlenecks?]
-- [Playbook gaps — what wasn't covered?]
-
-### Action items
-| Item | Owner | Due date | Priority |
-|------|-------|----------|----------|
-| [Control improvement] | [Team] | [Date] | [High/Med/Low] |
-
-### Metrics
-- Time to detect: [X hours/days from estimated start]
-- Time to contain: [X hours from detection]
-- Time to eradicate: [X hours]
-- Time to recover: [X hours]
-- Total business impact: [Systems affected, downtime, data risk]
-```
-
----
-
-## Working with Tools
-
-### MCP connectors this skill uses
-
-| Connector Category | Used for | Graceful degradation |
-|-------------------|----------|----------------------|
-| **SIEM** (Sentinel, Splunk, Chronicle) | Timeline queries, correlation, alert enrichment | Provide raw log excerpts manually |
-| **EDR** (Defender, CrowdStrike, SentinelOne) | Process trees, file activity, network connections | Collect via endpoint investigation |
-| **Identity** (Entra ID, Okta, SailPoint) | Auth logs, session data, group membership at time of incident | Pull from IdP UI manually |
-| **Threat Intelligence** (Feedly, OpenCTI, VirusTotal) | IOC enrichment, actor attribution, malware identification | Use free enrichment tools (VirusTotal, URLScan) |
-| **Ticketing** (ServiceNow, Jira) | Incident record creation and tracking | Document in any available system |
-| **Email** (Exchange/M365, Google) | Phishing investigation, mail header analysis | Export headers manually |
-
-### Recommended MCP priority for IR workflows
-
-1. SIEM — core detection and timeline data
-2. EDR — endpoint forensics
-3. Threat Intelligence — IOC enrichment and context
-4. Identity — account investigation
-
----
-
-## What This Skill Does NOT Do
-
-- **Does not execute containment actions autonomously.** Every containment decision requires explicit human authorization.
-- **Does not provide legal advice** on breach notification requirements. It identifies potential triggers; legal counsel determines obligations.
-- **Does not replace dedicated forensics tooling.** For court-admissible forensics, use certified DFIR tools and practitioners.
-- **Does not guarantee complete scope determination.** AI-assisted investigation accelerates the work but does not substitute for thorough human analysis.
-- **Does not cover OT/ICS incidents.** Industrial control system incidents have specialized response requirements not addressed here.
-- **Does not manage long-term remediation programs.** Post-incident remediation at program level belongs in the vulnerability-management and compliance-assessment skills.
+- Make containment or eradication decisions autonomously
+- Access or modify production systems directly
+- Provide legal advice on breach notification (defer to legal counsel and the compliance-assessment skill for regulatory mapping)
+- Replace human judgment on business risk tolerance
+- Guarantee completeness of investigation — always note what evidence sources were not available or not checked
